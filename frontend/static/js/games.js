@@ -1,73 +1,53 @@
 const WebApp = window.Telegram.WebApp;
 WebApp.expand();
 
-function send(name, payload) {
-  WebApp.sendData(JSON.stringify({ game: name, ...payload }));
+// Утилиты
+function sendAction(action, payload={}) {
+  WebApp.sendData(JSON.stringify({ action, ...payload }));
 }
 
-// Дартс
+// Анимация Дартс
 function animateDarts(force, angle) {
-  const canvas = document.getElementById('canvas-darts');
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 300;
+  canvas.classList.add('mx-auto', 'my-4');
+  document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d');
-  const len = force * 100;
-  let t = 0;
-  function draw() {
+  let t = 0, len = 100 * force, rad = angle*Math.PI/180;
+  function frame() {
     ctx.clearRect(0,0,300,300);
-    const x = 150 + len * Math.cos(angle * Math.PI/180) * (t/30);
-    const y = 150 + len * Math.sin(angle * Math.PI/180) * (t/30);
-    ctx.beginPath(); ctx.arc(x,y,5,0,2*Math.PI); ctx.fill();
-    t++;
-    if (t <= 30) requestAnimationFrame(draw);
+    const progress = Math.min(1, t/30);
+    const x = 150 + len*Math.cos(rad)*progress;
+    const y = 150 + len*Math.sin(rad)*progress;
+    ctx.beginPath(); ctx.arc(x,y,8,0,2*Math.PI); ctx.fillStyle="#f59e0b"; ctx.fill();
+    if (t++ < 30) requestAnimationFrame(frame);
   }
-  draw();
+  frame();
 }
 
-function animateWheel(segments) {
-  const canvas = document.getElementById('canvas-wheel');
-  const ctx = canvas.getContext('2d');
-  const N = segments.length;
-  const anglePer = 2*Math.PI/N;
-  let t = 0;
-  const target = Math.random()*2*Math.PI + 10*2*Math.PI;
-  function drawWheel(theta) {
-    ctx.clearRect(0,0,300,300);
-    for (let i=0; i<N; i++) {
-      ctx.beginPath();
-      ctx.moveTo(150,150);
-      ctx.arc(150,150,140,i*anglePer+theta,(i+1)*anglePer+theta);
-      ctx.fillStyle = i%2?'#ffd700':'#ff8c00';
-      ctx.fill();
-    }
-  }
-  function spin() {
-    t++;
-    const prog = t/200;
-    const theta = target*(1 - Math.exp(-5*prog));
-    drawWheel(theta);
-    if (t < 200) requestAnimationFrame(spin);
-    else {
-      const idx = Math.floor(((theta%(2*Math.PI))/(2*Math.PI))*N);
-      send('wheel', { segments });
-    }
-  }
-  spin();
-}
-
-document.getElementById('btn-darts').addEventListener('click', () => {
-  const force = Math.random();
-  const angle = Math.random()*360;
+// Примеры обработчиков
+document.getElementById('btn-darts').onclick = () => {
+  const force = Math.random(), angle = Math.random()*360;
   animateDarts(force, angle);
-  setTimeout(() => send('darts', { force, angle }), 1000);
-});
+  setTimeout(()=> sendAction('darts', { force, angle }), 1000);
+};
 
-document.getElementById('btn-mines').addEventListener('click', () => {
-  send('mines', { size: 5, num_mines: 5, i: 2, j: 2 });
-});
+document.getElementById('btn-mines').onclick = () => {
+  // Здесь можно отрисовать поле Canvas перед отправкой
+  sendAction('mines', { size:5, num_mines:5, i:2, j:2 });
+};
 
-document.getElementById('btn-dice').addEventListener('click', () => {
-  send('dice', {});
-});
+document.getElementById('btn-dice').onclick = () => {
+  // 3D-анимацию кубика можно добавить, пока — простой таймер
+  setTimeout(()=> sendAction('dice'), 800);
+};
 
-document.getElementById('btn-wheel').addEventListener('click', () => {
-  animateWheel(['10','20','50','x2','0','100']);
-});
+document.getElementById('btn-wheel').onclick = () => {
+  const segments = ['10','20','50','x2','0','100'];
+  // Canvas-анимация колеса здесь...
+  setTimeout(()=> sendAction('wheel', { segments }), 2000);
+};
+
+document.getElementById('btn-pay').onclick = () => {
+  sendAction('pay');
+};
