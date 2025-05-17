@@ -1,68 +1,116 @@
 <!DOCTYPE html>
-<html lang="ru" class="dark">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Казино MiniApp</title>
-  <script src="https://cdn.jsdelivr.net/npm/tailwindcss-jit-cdn"></script>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-</head>
-<body class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300">
-  <header class="flex justify-between items-center p-4 shadow-md bg-gray-50 dark:bg-gray-800">
-    <img src="/static/img/logo.svg" alt="Логотип" class="h-8"/>
-    <button id="theme-toggle" class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
-      🌙
-    </button>
-  </header>
-
-  <main class="p-6 space-y-6">
-    <!-- Hero -->
-    <section class="text-center space-y-2">
-      <h1 class="text-3xl font-bold">Добро пожаловать в Казино</h1>
-      <p class="text-gray-600 dark:text-gray-400">Выберите игру и получайте звёзды!</p>
-    </section>
-
-    <!-- Игры -->
-    <section class="grid grid-cols-2 gap-4">
-      <button id="btn-darts" class="game-card">
-        <img src="/static/img/darts.svg" alt="" class="mx-auto mb-2 w-12"/>
-        Дартс
-      </button>
-      <button id="btn-mines" class="game-card">
-        <img src="/static/img/mines.svg" alt="" class="mx-auto mb-2 w-12"/>
-        Мины
-      </button>
-      <button id="btn-dice" class="game-card">
-        <img src="/static/img/dice.svg" alt="" class="mx-auto mb-2 w-12"/>
-        Кубик
-      </button>
-      <button id="btn-wheel" class="game-card">
-        <img src="/static/img/wheel.svg" alt="" class="mx-auto mb-2 w-12"/>
-        Колесо фортуны
-      </button>
-    </section>
-
-    <!-- Оплата -->
-    <section class="text-center">
-      <button id="btn-pay" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-        💳 Пополнить баланс
-      </button>
-    </section>
-  </main>
-  
-  <script src="/static/js/games.js"></script>
-  <script>
-    // Переключение темы
-    const toggle = document.getElementById('theme-toggle');
-    toggle.onclick = () => {
-      document.documentElement.classList.toggle('dark');
-      toggle.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
-    };
-  </script>
+  <title>Казино</title>
   <style>
-    .game-card {
-      @apply flex flex-col items-center p-4 bg-gray-100 dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition;
+    body {
+      font-family: sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      transition: all 0.3s ease;
+    }
+    .dark {
+      --bg: #111;
+      --text: #fff;
+    }
+    .light {
+      --bg: #f9f9f9;
+      --text: #111;
+    }
+    .btn {
+      display: block;
+      margin: 10px auto;
+      padding: 10px 20px;
+      background: #6200ea;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .modal {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hidden { display: none; }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      width: 80%;
+      max-width: 300px;
     }
   </style>
+</head>
+<body class="dark">
+  <h1 style="text-align:center;">🎰 Казино</h1>
+  <button class="btn" onclick="playDice()">🎲 Кубик</button>
+  <button class="btn" onclick="playDarts()">🎯 Дартс</button>
+  <button class="btn" onclick="playWheel()">🎡 Колесо фортуны</button>
+  <button class="btn" onclick="openDepositModal()">💳 Пополнить баланс</button>
+  <button class="btn" onclick="toggleTheme()">🌓 Сменить тему</button>
+
+  <!-- Модалка пополнения -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <label>Введите сумму (10–150000 ₽)</label><br>
+      <input id="amount" type="number" min="10" max="150000"><br><br>
+      <button class="btn" onclick="confirmDeposit()">Перейти к оплате</button>
+      <button class="btn" onclick="closeModal()">Отмена</button>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById("modal");
+    const amountInput = document.getElementById("amount");
+
+    function openDepositModal() {
+      modal.classList.remove("hidden");
+    }
+    function closeModal() {
+      modal.classList.add("hidden");
+    }
+
+    function confirmDeposit() {
+      const amount = parseFloat(amountInput.value);
+      if (isNaN(amount) || amount < 10 || amount > 150000) {
+        alert("Введите корректную сумму от 10 до 150000 ₽");
+        return;
+      }
+      fetch("https://your-backend.onrender.com/pay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.url) window.open(data.url, "_blank");
+        else alert("Ошибка при получении ссылки");
+        closeModal();
+      });
+    }
+
+    function toggleTheme() {
+      const body = document.body;
+      body.className = body.classList.contains("dark") ? "light" : "dark";
+    }
+
+    function playDice() {
+      alert("🎲 Выпало: " + (Math.floor(Math.random() * 6) + 1));
+    }
+    function playDarts() {
+      const score = Math.floor(Math.random() * 100);
+      alert("🎯 Очки: " + score);
+    }
+    function playWheel() {
+      const sectors = ["10 ₽", "Пусто", "100 ₽", "50 ₽", "X2", "Пусто"];
+      const prize = sectors[Math.floor(Math.random() * sectors.length)];
+      alert("🎡 Колесо фортуны: " + prize);
+    }
+  </script>
 </body>
 </html>
